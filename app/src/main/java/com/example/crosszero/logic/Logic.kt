@@ -122,11 +122,10 @@ class Logic {
             return false
         }
 
-        fun bestMove(field: Field, sign: Byte, rowToWin: Int, depth: Int, presenterFactor: Int = 1, mask_: Mask = Mask(0)): Move {
-            var mask = Mask(mask_.fieldTable)
-            var bestMove = Move(-1, -1, sign, -sign)
+        fun bestMove(field: Field, sign: Byte, rowToWin: Int, depth: Int, presenterFactor: Int = 1, mask: Mask = Mask(0)): Move {
+            var bestMove: Move? = null
             if (mask.size == 0) {
-                mask = Mask(field, presenterFactor)
+                mask.reFormatMask(field, presenterFactor)
             }
             if (depth == 1) {
                 for (i in 0..field.size - 1) {
@@ -136,23 +135,25 @@ class Logic {
                             && moveIsWinning(field, Move(i, j, sign), rowToWin)
                         ) {
                             return Move(i, j, sign, sign.toInt())
-                        } else bestMove = Move(i,j,sign, 0)
+                        } else if (bestMove==null) {
+                            bestMove = Move(i,j,sign, 0)
+                        }
                     }
                 }
             } else {
                 var move = Move(-1, -1, sign)
                 for (i in 0..field.size - 1) {
                     for (j in 0..field.size - 1) {
-                        if (field.cell(i, j).toInt() == 0 && mask.cell(i,j)) {
+                        if (field.cell(i, j) == zero && mask.cell(i,j)) {
                             if (moveIsWinning(field, Move(i, j, sign), rowToWin)) {
                                 return Move(i, j, sign, sign.toInt())
                             } else {
                                 field.setCell(i, j, sign)
                                 move = bestMove(field, (-sign).toByte(), rowToWin, depth - 1)
-                                if (move.estimation == (-sign) && bestMove.xCoord == -1) {
+                                if (move.estimation == (-sign) && bestMove == null) {
                                     bestMove = Move(i, j, sign, -sign)
                                 }
-                                if (move.estimation == 0 && bestMove.estimation == -sign) {
+                                if (move.estimation == 0 && bestMove == null) {
                                     bestMove = Move(i, j, sign, 0)
                                 }
                                 if (move.estimation == sign.toInt()) {
@@ -165,7 +166,7 @@ class Logic {
                     }
                 }
             }
-            return bestMove
+            return bestMove!!
         }
 
         fun moveIsPresenting(field: Field, move: Move, presenterFactor: Int): Boolean {
